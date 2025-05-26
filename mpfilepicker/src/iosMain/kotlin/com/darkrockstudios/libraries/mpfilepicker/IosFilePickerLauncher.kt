@@ -7,6 +7,7 @@ import com.darkrockstudios.libraries.mpfilepicker.FilePickerLauncher.Mode.Multip
 import platform.Foundation.NSURL
 import platform.UIKit.UIAdaptivePresentationControllerDelegateProtocol
 import platform.UIKit.UIApplication
+import platform.UIKit.UIDevice
 import platform.UIKit.UIDocumentPickerDelegateProtocol
 import platform.UIKit.UIDocumentPickerMode
 import platform.UIKit.UIDocumentPickerViewController
@@ -14,7 +15,12 @@ import platform.UIKit.UIPresentationController
 import platform.UniformTypeIdentifiers.UTType
 import platform.UniformTypeIdentifiers.UTTypeContent
 import platform.UniformTypeIdentifiers.UTTypeFolder
+import platform.darwin.DISPATCH_TIME_NOW
 import platform.darwin.NSObject
+import platform.darwin.OS_LOG_TARGET_HAS_10_14_FEATURES
+import platform.darwin.dispatch_after
+import platform.darwin.dispatch_get_main_queue
+import platform.darwin.dispatch_time
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -90,7 +96,7 @@ public class FilePickerLauncher(
 						PlatformFile(nsUrl)
 					} ?: return@let listOf<PlatformFile>()
 				}
-
+				println("document picker")
 				onFileSelected(files)
 			}
 		}
@@ -98,14 +104,21 @@ public class FilePickerLauncher(
 		override fun documentPickerWasCancelled(
 			controller: UIDocumentPickerViewController
 		) {
+			println("Onfiles Picked null")
+			FilePickerLauncher.activeLauncher = null
 			onFileSelected(null)
 		}
 
 		override fun presentationControllerWillDismiss(
 			presentationController: UIPresentationController
 		) {
+			println("will dismiss")
 			(presentationController.presentedViewController as? UIDocumentPickerViewController)
-				?.let { documentPickerWasCancelled(it) }
+				?.let {
+					println("will dismiss let")
+					documentPickerWasCancelled(it)
+				}
+
 		}
 	}
 
@@ -131,17 +144,49 @@ public class FilePickerLauncher(
 	public fun launchFilePicker() {
 		activeLauncher = this
 		val picker = createPicker()
-		UIApplication.sharedApplication.keyWindow?.rootViewController?.presentViewController(
-			// Reusing a closed/dismissed picker causes problems with
-			// triggering delegate functions, launch with a new one.
+
+		val rootVC = UIApplication.sharedApplication.keyWindow?.rootViewController
+
+		rootVC?.presentViewController(
 			picker,
 			animated = true,
 			completion = {
-				(picker as? UIDocumentPickerViewController)
-					?.allowsMultipleSelection = pickerMode is MultipleFiles
-			},
+				(picker as? UIDocumentPickerViewController)?.allowsMultipleSelection = pickerMode is MultipleFiles
+
+				// ⚠️ Start polling if on iOS 15.0–15.3.x
+				if (isIOS15dot0to15dot3()) {
+					pollPickerDismissal(picker)
+				}
+			}
 		)
 	}
+
+	private fun pollPickerDismissal(picker: UIDocumentPickerViewController) {
+		fun checkDismissed() {
+			if (picker.presentingViewController == null) {
+				println("Picker was dismissed by drag (iOS 15 bug workaround)")
+				FilePickerLauncher.activeLauncher = null
+				onFileSelected(null)
+			} else {
+				// Continue polling after 300ms
+				dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300_000_000), dispatch_get_main_queue()) {
+					checkDismissed()
+				}
+			}
+		}
+
+		// Start polling after short delay
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 500_000_000), dispatch_get_main_queue()) {
+			checkDismissed()
+		}
+	}
+
+
+	private fun isIOS15dot0to15dot3(): Boolean {
+		val version = UIDevice.currentDevice.systemVersion
+		return version.startsWith("15.0") || version.startsWith("15.1") || version.startsWith("15.2") || version.startsWith("15.3")
+	}
+
 }
 
 public suspend fun launchFilePicker(
