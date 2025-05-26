@@ -1,7 +1,7 @@
 plugins {
 	kotlin("native.cocoapods")
-	alias(libs.plugins.kotlinMultiplatform)
-	alias(libs.plugins.jetbrainsCompose)
+	id("org.jetbrains.kotlin.multiplatform") version "1.9.22"
+	id("org.jetbrains.compose") version "1.6.1"
 }
 
 kotlin {
@@ -24,7 +24,7 @@ kotlin {
 
 kotlin.cocoapods {
 	name = "ios"
-	version = libs.versions.library.get()
+	version = "3.1.0"
 	summary =
 		"A multiplatform compose widget for picking files with each platform''s Native File Picker Dialog."
 	homepage = "https://github.com/Wavesonics/compose-multiplatform-file-picker"

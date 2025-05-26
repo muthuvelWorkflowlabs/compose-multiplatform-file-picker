@@ -1,20 +1,20 @@
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsCompose)
+	id("com.android.application")
+	id("org.jetbrains.compose") version "1.6.1"
     kotlin("android")
 }
 
 dependencies {
     implementation(project(":mpfilepicker"))
-    implementation(libs.compose.activity)
+	implementation("androidx.activity:activity-compose:1.8.2")
 }
 
 android {
-    compileSdk = libs.versions.android.compile.sdk.get().toInt()
+    compileSdk = 34
     defaultConfig {
         applicationId = "com.darkrockstudios.libraries.mpfilepicker.android"
-        minSdk = libs.versions.android.min.sdk.get().toInt()
-        targetSdk = libs.versions.android.target.sdk.get().toInt()
+        minSdk = 21
+        targetSdk = 34
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

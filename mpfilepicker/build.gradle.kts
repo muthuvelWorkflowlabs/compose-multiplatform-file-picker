@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 import java.net.URI
 
 plugins {
-	alias(libs.plugins.kotlinMultiplatform)
-	alias(libs.plugins.androidLibrary)
-	alias(libs.plugins.jetbrainsCompose)
+	id("org.jetbrains.kotlin.multiplatform") version "1.9.22"
+	id("com.android.library")
+	id("org.jetbrains.compose") version "1.6.1"
 	id("maven-publish")
 	id("signing")
 }
@@ -13,7 +13,7 @@ val readableName = "Multiplatform File Picker"
 val repoUrl = "https://github.com/Wavesonics/compose-multiplatform-file-picker"
 group = "com.darkrockstudios"
 description = "A multiplatform compose widget for picking files"
-version = libs.versions.library.get()
+version = "3.1.0"
 
 extra.apply {
 	set("isReleaseVersion", !(version as String).endsWith("SNAPSHOT"))
@@ -68,10 +68,16 @@ kotlin {
 			api(compose.uiTooling)
 			api(compose.preview)
 			api(compose.material)
-			api(libs.androidx.appcompat)
-			api(libs.androidx.core.ktx)
-			api(libs.compose.activity)
-			api(libs.kotlinx.coroutines.android)
+//			api(libs.androidx.appcompat)
+//			api(libs.androidx.core.ktx)
+//			api(libs.compose.activity)
+//			api(libs.kotlinx.coroutines.android)
+
+			api("androidx.appcompat:appcompat:1.6.1")
+			api("androidx.core:core-ktx:1.12.0")
+			api("androidx.activity:activity-compose:1.8.2")
+			api("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+
 		}
 
 		jvmMain.dependencies {
@@ -174,10 +180,10 @@ signing {
 
 android {
 	namespace = "com.darkrockstudios.libraries.mpfilepicker"
-	compileSdk = libs.versions.android.compile.sdk.get().toInt()
+	compileSdk = 34
 	sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
 	defaultConfig {
-		minSdk = libs.versions.android.min.sdk.get().toInt()
+		minSdk = 21
 	}
 	compileOptions {
 		sourceCompatibility = JavaVersion.VERSION_17
